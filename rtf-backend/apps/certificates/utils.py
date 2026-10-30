@@ -1,5 +1,5 @@
 import uuid
-from certificates.models import Certificate
+from apps.certificates.models import Certificate
 
 
 def generate_certificate(student, course):

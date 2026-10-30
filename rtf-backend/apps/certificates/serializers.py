@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from .models import Certificate
-from courses.serializers import CourseListSerializer
+from apps.courses.serializers import CourseListSerializer
 
 
 class CertificateSerializer(serializers.ModelSerializer):

@@ -1,5 +1,5 @@
 from django.contrib import admin
-from courses.models import Lesson
+from apps.courses.models import Lesson
 from .models import Enrollment, LessonCompletion, QuizAttempt
 
 admin.site.register(Enrollment)

@@ -3,9 +3,9 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from .models import Enrollment, LessonCompletion
 from .serializers import EnrollmentSerializer
-from courses.models import Course, Lesson
-from courses.utils import get_locked_modules, calculate_progress, is_course_complete
-from certificates.utils import generate_certificate
+from apps.courses.models import Course, Lesson
+from apps.courses.utils import get_locked_modules, calculate_progress, is_course_complete
+from apps.certificates.utils import generate_certificate
 from django.db import transaction
 
 class EnrollmentView(APIView):

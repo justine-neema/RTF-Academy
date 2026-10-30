@@ -48,7 +48,7 @@ INSTALLED_APPS = [
     # Third-party apps
     'rest_framework',
     'corsheaders',
-    'storages'
+    # 'storages'
     
     # RTF academy core apps
     'apps.users',
@@ -56,7 +56,6 @@ INSTALLED_APPS = [
     'apps.progress',
     'apps.quizzes',
     'apps.certificates',
-    'apps.core',
 ]
 
 MIDDLEWARE = [
@@ -195,4 +194,4 @@ LOGGING = {
 
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-AUTH_USER_MODEL = 'users.User' 
+# AUTH_USER_MODEL = 'users.User' 

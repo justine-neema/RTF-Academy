@@ -5,12 +5,12 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from certificates.models import Certificate
-from progress.models import Enrollment, LessonCompletion, QuizAttempt
-from users.permissions import IsAdminRole
+from apps.certificates.models import Certificate
+from apps.progress.models import Enrollment, LessonCompletion, QuizAttempt
+from apps.users.permissions import IsAdminRole
 
-from quizzes.models import Question, Quiz
-from users.models import UserProfile
+from apps.quizzes.models import Question, Quiz
+from apps.users.models import UserProfile
 
 from .utils import get_locked_modules
 from .models import Course, Lesson, Module

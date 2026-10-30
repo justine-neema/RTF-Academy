@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from .models import Course, Module, Lesson
 from django.core.exceptions import ObjectDoesNotExist
-from progress.models import Enrollment
+from apps.progress.models import Enrollment
 from .utils import calculate_progress
 
 

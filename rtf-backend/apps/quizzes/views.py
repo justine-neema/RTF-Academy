@@ -4,8 +4,8 @@ from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.db import transaction
-from courses.models import Module
-from users.permissions import IsAdminRole
+from apps.courses.models import Module
+from apps.users.permissions import IsAdminRole
 from .models import Quiz, Question, AnswerChoice, StudentAnswer
 from .serializers import (
     QuizStudentSerializer,
@@ -16,9 +16,9 @@ from .serializers import (
     AdminQuestionSerializer,
     QuestionWriteSerializer,
 )
-from progress.models import Enrollment, QuizAttempt
-from courses.utils import get_locked_modules, calculate_progress, is_course_complete
-from certificates.utils import generate_certificate
+from apps.progress.models import Enrollment, QuizAttempt
+from apps.courses.utils import get_locked_modules, calculate_progress, is_course_complete
+from apps.certificates.utils import generate_certificate
 
 
 class QuizDetailView(APIView):

@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from .models import Quiz, Question, AnswerChoice,StudentAnswer
-from progress.models import QuizAttempt
+from apps.progress.models import QuizAttempt
 
 class AnswerChoiceStudentSerializer(serializers.ModelSerializer):
     """
