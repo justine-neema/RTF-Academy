@@ -1,0 +1,163 @@
+[
+{
+    "model": "users.userprofile",
+    "pk": "ADMIN_UID_123",
+    "fields": {
+        "password": "!ljC8SAlliZJMeNigDRoeGBLzy4lr9QOvi8JTCuIw",
+        "email": "admin@rtfacademy.com",
+        "full_name": "RTF Admin",
+        "role": "Admin",
+        "last_login": null,
+        "created_at": "2026-06-18T14:41:31.427Z",
+        "is_active": true,
+        "is_admin": false
+    }
+},
+{
+    "model": "users.userprofile",
+    "pk": "STUDENT_UID_456",
+    "fields": {
+        "password": "!xuYkBCou1jJfSbs9tftnAykCFXhMtEDBIwmQmDp2",
+        "email": "student@rtfacademy.com",
+        "full_name": "Test Student",
+        "role": "Student",
+        "last_login": null,
+        "created_at": "2026-06-18T14:41:31.437Z",
+        "is_active": true,
+        "is_admin": false
+    }
+},
+{
+    "model": "users.userprofile",
+    "pk": "v3e6jLk8WfdIgRTiecVWt13Xt7d2",
+    "fields": {
+        "password": "!Lx96q5T9iYDySfrCk38vkdcOqve0tiQPXrzwyG2Z",
+        "email": "test@rtfacademy.com",
+        "full_name": "Test Student",
+        "role": "Student",
+        "last_login": null,
+        "created_at": "2026-06-14T20:54:06.655Z",
+        "is_active": true,
+        "is_admin": false
+    }
+},
+{
+    "model": "courses.course",
+    "pk": "4e63ac01-d189-4af0-ae97-5deebe4a7955",
+    "fields": {
+        "title": "Digital Literacy for Refugee Youth",
+        "description": "Master essential computer, internet, and productivity skills.",
+        "thumbnail_url": "https://images.unsplash.com/photo-1555066931-4365d14bab8c",
+        "is_published": true,
+        "created_at": "2026-06-18T14:41:31.440Z",
+        "updated_at": "2026-06-18T14:41:31.440Z"
+    }
+},
+{
+    "model": "courses.module",
+    "pk": "59f2611e-0c95-4289-bbcc-a65269278e80",
+    "fields": {
+        "course": "4e63ac01-d189-4af0-ae97-5deebe4a7955",
+        "title": "Module 1: Introduction to Computers",
+        "sequence_order": 1
+    }
+},
+{
+    "model": "courses.lesson",
+    "pk": "df3535c6-77a0-4100-9f34-6ce713276b2b",
+    "fields": {
+        "module": "59f2611e-0c95-4289-bbcc-a65269278e80",
+        "title": "What is a Computer?",
+        "text_content": "A computer is an electronic device that processes data.",
+        "video_s3_url": null,
+        "sequence_order": 1,
+        "estimated_minutes": 15
+    }
+},
+{
+    "model": "quizzes.quiz",
+    "pk": "1f66b64d-a974-4703-a77b-c945a9e3b153",
+    "fields": {
+        "module": "59f2611e-0c95-4289-bbcc-a65269278e80",
+        "title": "Computer Basics Quiz",
+        "passing_threshold": 80
+    }
+},
+{
+    "model": "quizzes.question",
+    "pk": "66c4a9eb-bdac-4b2c-aa90-d76581297db7",
+    "fields": {
+        "quiz": "1f66b64d-a974-4703-a77b-c945a9e3b153",
+        "question_text": "Which of the following is computer hardware?"
+    }
+},
+{
+    "model": "quizzes.answerchoice",
+    "pk": "7144a0d8-ea8d-4400-bbe3-57251fdc47a6",
+    "fields": {
+        "question": "66c4a9eb-bdac-4b2c-aa90-d76581297db7",
+        "choice_text": "Keyboard",
+        "is_correct": true
+    }
+},
+{
+    "model": "quizzes.answerchoice",
+    "pk": "a81339ae-2a98-4f09-8c64-218e12944e1a",
+    "fields": {
+        "question": "66c4a9eb-bdac-4b2c-aa90-d76581297db7",
+        "choice_text": "Web Browser",
+        "is_correct": false
+    }
+},
+{
+    "model": "quizzes.studentanswer",
+    "pk": "daae1730-27a3-4d1e-8c1a-6649800c437b",
+    "fields": {
+        "attempt": "8955f9c5-bdbb-43b3-b20a-fa9b4b68fbb1",
+        "question": "66c4a9eb-bdac-4b2c-aa90-d76581297db7",
+        "selected_choice": "7144a0d8-ea8d-4400-bbe3-57251fdc47a6"
+    }
+},
+{
+    "model": "progress.enrollment",
+    "pk": "bdbf4d8c-9b11-47a0-b4dc-3e642c127b8f",
+    "fields": {
+        "student": "STUDENT_UID_456",
+        "course": "4e63ac01-d189-4af0-ae97-5deebe4a7955",
+        "progress_percentage": 100,
+        "enrolled_at": "2026-06-18T14:41:31.483Z",
+        "is_completed": true
+    }
+},
+{
+    "model": "progress.lessoncompletion",
+    "pk": "fdfb3733-bdee-45d8-b0c8-c91fbe1cb137",
+    "fields": {
+        "student": "STUDENT_UID_456",
+        "lesson": "df3535c6-77a0-4100-9f34-6ce713276b2b",
+        "completed_at": "2026-06-18T14:41:31.478Z"
+    }
+},
+{
+    "model": "progress.quizattempt",
+    "pk": "8955f9c5-bdbb-43b3-b20a-fa9b4b68fbb1",
+    "fields": {
+        "student": "STUDENT_UID_456",
+        "quiz": "1f66b64d-a974-4703-a77b-c945a9e3b153",
+        "score": 100,
+        "passed": true,
+        "attempted_at": "2026-06-18T14:41:31.469Z"
+    }
+},
+{
+    "model": "certificates.certificate",
+    "pk": "b6423fa1-d8df-439b-97d5-3652a34687de",
+    "fields": {
+        "student": "STUDENT_UID_456",
+        "course": "4e63ac01-d189-4af0-ae97-5deebe4a7955",
+        "verification_code": "RTF-CERT-889900",
+        "pdf_s3_url": "https://s3.amazonaws.com/cert.pdf",
+        "issued_at": "2026-06-18T14:41:31.487Z"
+    }
+}
+]
