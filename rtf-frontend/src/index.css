@@ -1,0 +1,18 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  @apply bg-gray-50 text-gray-900;
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+/* Prevent text selection on quiz/assessment screens (integrity mode) */
+.integrity-lock {
+  user-select: none;
+  -webkit-user-select: none;
+}
