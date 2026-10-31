@@ -4,13 +4,22 @@ from .models import UserProfile
 class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserProfile
-        fields = [
-            'uid',
-            'email',
-            'full_name',
-            'role',
-            'last_login',
-            'created_at',
-            'is_active'
-        ]
-        read_only_fields = ['uid', 'email', 'role', 'last_login', 'created_at', 'is_active']
+        fields = ['id', 'email', 'full_name', 'role', 'created_at', 'is_active', 'is_admin']
+        read_only_fields = ['id', 'email', 'role', 'created_at', 'is_active', 'is_admin']
+
+class RegisterSerializer(serializers.ModelSerializer):
+    password = serializers.CharField(write_only=True, required=True, min_length=6)
+    full_name = serializers.CharField(required=True)
+
+    class Meta:
+        model = UserProfile
+        fields = ['email', 'full_name', 'password']
+
+    def create(self, validated_data):
+        # Use our custom manager to hash the password and create the user
+        user = UserProfile.objects.create_user(
+            email=validated_data['email'],
+            full_name=validated_data['full_name'],
+            password=validated_data['password']
+        )
+        return user
