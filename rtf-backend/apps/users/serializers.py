@@ -16,10 +16,12 @@ class RegisterSerializer(serializers.ModelSerializer):
         fields = ['email', 'full_name', 'password']
 
     def create(self, validated_data):
-        # Use our custom manager to hash the password and create the user
         user = UserProfile.objects.create_user(
             email=validated_data['email'],
             full_name=validated_data['full_name'],
             password=validated_data['password']
         )
         return user
+    
+    def to_representation(self, instance):
+        return UserProfileSerializer(instance).data

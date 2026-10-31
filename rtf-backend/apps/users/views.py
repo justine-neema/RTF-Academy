@@ -1,12 +1,8 @@
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework_simplejwt.views import TokenObtainPairView
-from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-
-# OAuth imports
-from dj_rest_auth.registration.views import SocialLoginView
-from allauth.socialaccount.providers.google.views import GoogleOAuth2Adapter
-from allauth.socialaccount.providers.oauth2.client import OAuth2Client
+from rest_framework_simplejwt.tokens import RefreshToken
+import jwt
 
 from .models import UserProfile
 from .serializers import UserProfileSerializer, RegisterSerializer
@@ -16,21 +12,14 @@ from .serializers import UserProfileSerializer, RegisterSerializer
 # ==========================================
 
 class RegisterView(generics.CreateAPIView):
-    """POST /api/users/register/ - Creates a new user with email and password."""
     queryset = UserProfile.objects.all()
     permission_classes = [permissions.AllowAny]
     serializer_class = RegisterSerializer
 
 class CustomLoginView(TokenObtainPairView):
-    """
-    POST /api/users/login/ - Standard email & password login.
-    Returns Access and Refresh JWT tokens.
-    (Uses the default TokenObtainPairSerializer from SimpleJWT)
-    """
     permission_classes = [permissions.AllowAny]
 
 class CurrentUserView(generics.RetrieveUpdateAPIView):
-    """GET/PUT /api/users/me/ - Fetches or updates the logged-in user's profile."""
     serializer_class = UserProfileSerializer
     permission_classes = [permissions.IsAuthenticated]
 
@@ -38,14 +27,53 @@ class CurrentUserView(generics.RetrieveUpdateAPIView):
         return self.request.user
 
 # ==========================================
-# 2. GOOGLE OAUTH
+# 2. GOOGLE OAUTH (MANUAL IMPLEMENTATION)
 # ==========================================
 
-class GoogleLogin(SocialLoginView):
+class GoogleLogin(generics.CreateAPIView):
     """
-    POST /api/users/auth/google/ - Receives Google access_token from React.
-    Returns Access and Refresh JWT tokens.
+    POST /api/users/auth/google/
+    Manually decodes the Google token, creates the user, and returns JWT tokens.
     """
-    adapter_class = GoogleOAuth2Adapter
-    callback_url = "http://localhost:5173"
-    client_class = OAuth2Client
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request, *args, **kwargs):
+        token = request.data.get('access_token')
+        if not token:
+            return Response({"error": "No token provided"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            # Decode the Google ID token
+            decoded_token = jwt.decode(token, options={"verify_signature": False}, algorithms=["RS256"])
+            email = decoded_token.get('email')
+            full_name = decoded_token.get('name', email.split('@')[0] if email else 'Learner')
+
+            if not email:
+                return Response({"error": "No email found in token"}, status=status.HTTP_400_BAD_REQUEST)
+
+            # Get or create the user
+            user, created = UserProfile.objects.get_or_create(
+                email=email,
+                defaults={
+                    'full_name': full_name,
+                    'role': 'Student',
+                    'is_active': True
+                }
+            )
+
+            # If the user exists but has no full_name, update it
+            if not created and not user.full_name:
+                user.full_name = full_name
+                user.save()
+
+            # Generate JWT tokens
+            refresh = RefreshToken.for_user(user)
+
+            return Response({
+                'access': str(refresh.access_token),
+                'refresh': str(refresh),
+                'user': UserProfileSerializer(user).data
+            }, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)

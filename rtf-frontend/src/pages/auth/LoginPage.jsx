@@ -1,11 +1,11 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { GoogleLogin } from '@react-oauth/google'
 import { useAuth } from '../../context/AuthContext.jsx'
 import Button from '../../components/common/Button.jsx'
-import GoogleButton from '../../components/common/GoogleButton.jsx'
 
 export default function LoginPage() {
-  const { login, loginWithGoogle, firebaseEnabled } = useAuth()
+  const { login, loginWithGoogle } = useAuth()
   const navigate = useNavigate()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -16,9 +16,9 @@ export default function LoginPage() {
     e.preventDefault()
     setError('')
     if (!email || !password) return setError('Invalid email or password.')
+    
     try {
       const user = await login({ email, password })
-      // SAFETY CHECK: Only navigate if the user object successfully returned
       if (user) {
         navigate(user.role === 'Admin' ? '/admin' : '/dashboard')
       }
@@ -27,12 +27,11 @@ export default function LoginPage() {
     }
   }
 
-  async function handleGoogle() {
+  async function handleGoogleSuccess(credentialResponse) {
     setError('')
     setGoogleLoading(true)
     try {
-      const user = await loginWithGoogle()
-      // SAFETY CHECK: Only navigate if the user object successfully returned
+      const user = await loginWithGoogle(credentialResponse.credential)
       if (user) {
         navigate(user.role === 'Admin' ? '/admin' : '/dashboard')
       }
@@ -45,9 +44,7 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-[calc(100vh-80px)] flex flex-col items-center justify-center bg-gray-50 px-4 py-10">
-
       <div className="w-full max-w-md bg-white rounded-2xl shadow-sm border border-[#D19A30]/40 p-8 sm:p-10">
-
         <h1 className="text-2xl font-bold text-[#D19A30] text-center mb-8">Welcome Back</h1>
 
         {error && <p className="text-sm text-red-600 mb-4 bg-red-50 rounded-md px-3 py-2 text-center">{error}</p>}
@@ -92,14 +89,15 @@ export default function LoginPage() {
           <div className="h-px bg-gray-200 flex-1" />
         </div>
 
-        <GoogleButton onClick={handleGoogle} disabled={googleLoading} />
-
-        {!firebaseEnabled && (
-          <p className="text-xs text-gray-400 mt-4 text-center leading-relaxed">
-            Google sign-in needs Firebase config — see .env.example. Meanwhile email/password
-            runs in local demo mode (an email containing "admin" opens the admin dashboard).
-          </p>
-        )}
+        <div className="flex justify-center w-full">
+          <GoogleLogin
+            onSuccess={handleGoogleSuccess}
+            onError={() => setError('Google Login Failed')}
+            shape="rectangular"
+            width="100%"
+            prompt="select_account"
+          />
+        </div>
 
         <p className="text-center text-sm text-gray-600 mt-8">
           Don't have an account? <Link to="/register" className="text-[#849A53] font-semibold hover:underline">Sign up</Link>

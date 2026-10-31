@@ -1,31 +1,33 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { GoogleLogin } from '@react-oauth/google'
 import { useAuth } from '../../context/AuthContext.jsx'
 import Button from '../../components/common/Button.jsx'
-import GoogleButton from '../../components/common/GoogleButton.jsx'
 
 export default function RegisterPage() {
-  const { register, loginWithGoogle, firebaseEnabled } = useAuth()
+  const { register, loginWithGoogle } = useAuth()
   const navigate = useNavigate()
   const [form, setForm] = useState({ full_name: '', email: '', password: '', confirm: '', agree: false })
   const [error, setError] = useState('')
   const [googleLoading, setGoogleLoading] = useState(false)
 
-  async function handleGoogle() {
+  function update(field, value) {
+    setForm((f) => ({ ...f, [field]: value }))
+  }
+
+  async function handleGoogleSuccess(credentialResponse) {
     setError('')
     setGoogleLoading(true)
     try {
-      await loginWithGoogle()
-      navigate('/dashboard')
+      const user = await loginWithGoogle(credentialResponse.credential)
+      if (user) {
+        navigate(user.role === 'Admin' ? '/admin' : '/dashboard')
+      }
     } catch (err) {
-      setError(err.message)
+      setError(err.message || 'Google sign-in failed.')
     } finally {
       setGoogleLoading(false)
     }
-  }
-
-  function update(field, value) {
-    setForm((f) => ({ ...f, [field]: value }))
   }
 
   async function handleSubmit(e) {
@@ -37,17 +39,17 @@ export default function RegisterPage() {
     if (form.password !== form.confirm) return setError('Passwords do not match.')
     if (!form.agree) return setError('Please agree to the Terms of Service.')
 
-    await register({ full_name: form.full_name, email: form.email, password: form.password })
-    navigate('/dashboard')
+    try {
+      const user = await register({ full_name: form.full_name, email: form.email, password: form.password })
+      navigate(user.role === 'Admin' ? '/admin' : '/dashboard')
+    } catch (err) {
+      setError(err.message || 'Registration failed.')
+    }
   }
 
   return (
     <div className="min-h-[calc(100vh-80px)] flex flex-col items-center justify-center bg-gray-50 px-4 py-10">
-
-      {/* CHANGED: Card border is now gold */}
       <div className="w-full max-w-md bg-white rounded-2xl shadow-sm border border-[#D19A30]/40 p-8 sm:p-10">
-
-        {/* CHANGED: Title text is now gold */}
         <h1 className="text-2xl font-bold text-[#D19A30] text-center mb-8">Create Account</h1>
 
         {error && <p className="text-sm text-red-600 mb-4 bg-red-50 rounded-md px-3 py-2 text-center">{error}</p>}
@@ -116,13 +118,15 @@ export default function RegisterPage() {
           <div className="h-px bg-gray-200 flex-1" />
         </div>
 
-        <GoogleButton onClick={handleGoogle} disabled={googleLoading} />
-
-        {!firebaseEnabled && (
-          <p className="text-xs text-gray-400 mt-4 text-center leading-relaxed">
-            Google sign-in needs Firebase config — see .env.example.
-          </p>
-        )}
+        <div className="flex justify-center w-full">
+          <GoogleLogin
+            onSuccess={handleGoogleSuccess}
+            onError={() => setError('Google Sign Up Failed')}
+            shape="rectangular"
+            width="100%"
+            prompt="select_account"
+          />
+        </div>
 
         <p className="text-center text-sm text-gray-600 mt-8">
           Already have an account? <Link to="/login" className="text-[#A88044] font-semibold hover:underline">Log in</Link>

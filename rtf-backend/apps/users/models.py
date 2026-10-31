@@ -1,29 +1,33 @@
 from django.db import models
-from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
-
+from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 
 class UserProfileManager(BaseUserManager):
-    def create_user(self, uid, email, full_name, role='Student', **extra_fields):
+    def create_user(self, email, full_name, password=None, **extra_fields):
         if not email:
             raise ValueError('The Email field must be set')
 
         email = self.normalize_email(email)
-        user = self.model(uid=uid, email=email, full_name=full_name, role=role, **extra_fields)
-        user.set_unusable_password()  # Passwords live in Firebase
+        extra_fields.setdefault('role', 'Student')
+        
+        user = self.model(email=email, full_name=full_name, **extra_fields)
+        user.set_password(password)
         user.save(using=self._db)
         return user
 
-    def create_superuser(self, uid, email, full_name, **extra_fields):
+    def create_superuser(self, email, full_name, password=None, **extra_fields):
+        # Note: We don't pass 'is_staff' here because it's a @property in the model
         extra_fields.setdefault('is_admin', True)
-        return self.create_user(uid, email, full_name, role='Admin', **extra_fields)
+        extra_fields.setdefault('role', 'Admin')
+        extra_fields.setdefault('is_superuser', True)
+        
+        return self.create_user(email, full_name, password, **extra_fields)
 
-
-class UserProfile(AbstractBaseUser):
+class UserProfile(AbstractBaseUser, PermissionsMixin):
     ROLE_CHOICES = [
         ('Student', 'Student'),
         ('Admin', 'Admin'),
     ]
-    uid = models.CharField(max_length=128, primary_key=True, unique=True)
+    
     email = models.EmailField(unique=True)
     full_name = models.CharField(max_length=255)
     role = models.CharField(max_length=10, choices=ROLE_CHOICES, default='Student')
@@ -35,13 +39,14 @@ class UserProfile(AbstractBaseUser):
     objects = UserProfileManager()
 
     USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ['full_name', 'uid']
+    REQUIRED_FIELDS = ['full_name']
 
     def __str__(self):
         return f"{self.full_name} - {self.role}"
 
     @property
     def is_staff(self):
+        # Django admin requires is_staff to be True to log in
         return self.is_admin
 
     def has_perm(self, perm, obj=None):

@@ -117,7 +117,7 @@ ACCOUNT_USER_MODEL_USERNAME_FIELD = None
 ACCOUNT_EMAIL_VERIFICATION = 'none' 
 # --- Django REST Framework Configuration ---
 REST_FRAMEWORK = {
-    'EXCEPTION_HANDLER': 'apps.core.exceptions.rtf_academy_exception_handler',
+    'EXCEPTION_HANDLER': 'config.exceptions.rtf_academy_exception_handler', # <-- UPDATE THIS
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
@@ -155,6 +155,11 @@ SOCIALACCOUNT_PROVIDERS = {
             'access_type': 'online',
         },
         'OAUTH_PKCE_ENABLED': True,
+        'APP': {
+            'client_id': os.getenv('GOOGLE_CLIENT_ID', ''),
+            'secret': os.getenv('GOOGLE_CLIENT_SECRET', ''),
+            'key': ''
+        }
     }
 }
 

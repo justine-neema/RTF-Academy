@@ -1,6 +1,4 @@
-
 import { Link } from 'react-router-dom'
-import { useEffect, useState } from 'react'
 import { useAuth } from '../../context/AuthContext.jsx'
 import { useProgress } from '../../context/ProgressContext.jsx'
 import StatCard from '../../components/common/StatCard.jsx'
@@ -17,11 +15,16 @@ export default function StudentDashboard() {
   const active    = enrollments.filter((e) => !e.is_completed)
   const completed = enrollments.filter((e) => e.is_completed)
 
+  // Safely extract the first name, with multiple fallbacks
+  const displayName = user?.full_name 
+    ? user.full_name.split(' ')[0] 
+    : (user?.email ? user.email.split('@')[0] : 'Learner')
+
   return (
     <div className="animate-fade-in w-full">
       {/* Header */}
       <h1 className="text-2xl font-bold text-navy mb-6">
-        Hi, {user?.full_name?.split(' ')[0] || 'Learner'}!
+        Hi, {displayName}!
       </h1>
 
       {/* STAT CARDS - Now utilizing the updated StatCard component */}
