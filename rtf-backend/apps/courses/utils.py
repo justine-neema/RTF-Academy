@@ -1,4 +1,7 @@
 from django.core.exceptions import ObjectDoesNotExist
+from apps.progress.models import LessonCompletion, QuizAttempt
+from apps.courses.models import Lesson, Module
+
 
 def get_locked_modules(student, course):
     """
@@ -10,8 +13,6 @@ def get_locked_modules(student, course):
     - A module is complete when ALL its lessons are done AND its quiz is passed.
     - If a module has no quiz, only lesson completion is required.
     """
-    from progress.models import LessonCompletion, QuizAttempt
-
     modules = list(course.modules.order_by('sequence_order'))
     locked_modules = set()
 
@@ -22,15 +23,16 @@ def get_locked_modules(student, course):
         prev_module = modules[i - 1]
 
         prev_lesson_ids = set(prev_module.lessons.values_list('id', flat=True))
-        completed_lesson_ids = set(
+        completed_lessons_ids = set(
             LessonCompletion.objects.filter(
                 student=student, lesson__module=prev_module
             ).values_list('lesson_id', flat=True)
         )
+
         if len(prev_lesson_ids) == 0:
             all_lessons_done = True
         else:
-            all_lessons_done = (prev_lesson_ids == completed_lesson_ids)
+            all_lessons_done = (prev_lesson_ids == completed_lessons_ids)
 
         quiz_passed = True
         try:
@@ -54,9 +56,6 @@ def calculate_progress(student, course):
     Progress = (completed_lessons + passed_quizzes) / (total_lessons + total_quizzes) * 100
     Passing a quiz is a requirement and counts toward progress alongside lessons.
     """
-    from progress.models import LessonCompletion, QuizAttempt
-    from courses.models import Lesson, Module
-
     total_lessons = Lesson.objects.filter(module__course=course).count()
     completed_lessons = LessonCompletion.objects.filter(
         student=student, lesson__module__course=course

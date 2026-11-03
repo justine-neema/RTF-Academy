@@ -13,7 +13,6 @@ export function ProgressProvider({ children }) {
   const refreshEnrollments = useCallback(async () => {
     if (!user) return
     try {
-      // api.js automatically handles the token
       const data = await api.listEnrollments()
       setEnrollments(Array.isArray(data) ? data : [])
     } catch (e) {
@@ -31,7 +30,6 @@ export function ProgressProvider({ children }) {
     }
   }, [user])
 
-  // Load data when user logs in
   useEffect(() => {
     async function loadData() {
       if (user) {
@@ -51,8 +49,10 @@ export function ProgressProvider({ children }) {
   }
 
   async function enroll(courseId) {
+    // 1. Call the API
     const data = await api.enroll(courseId)
-    await refreshEnrollments() // Refresh the list so the UI updates instantly
+    // 2. Refresh state so isEnrolled() becomes true
+    await refreshEnrollments() 
     return data
   }
 
@@ -70,15 +70,11 @@ export function ProgressProvider({ children }) {
     return data 
   }
 
-  function allEnrollments() { 
-    return enrollments 
-  }
-
   return (
     <ProgressContext.Provider value={{
       enrollments, certificates, loading,
       refreshEnrollments, refreshCertificates,
-      enroll, isEnrolled, getEnrollment, completeLesson, allEnrollments
+      enroll, isEnrolled, getEnrollment, completeLesson
     }}>
       {children}
     </ProgressContext.Provider>

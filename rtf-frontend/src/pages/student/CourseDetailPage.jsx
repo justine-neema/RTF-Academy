@@ -39,7 +39,11 @@ export default function CourseDetailPage() {
       // 1. Send the request to Django
       await enroll(id)
       
-      // 2. If successful, navigate to the success page
+      // 2. THE ONLY CHANGE: Re-fetch the course so the modules unlock immediately
+      const updatedCourse = await api.getCourse(id)
+      setCourse(updatedCourse)
+
+      // 3. If successful, navigate to the success page
       navigate(`/enrollment-success/${id}`)
     } catch (e) {
       console.error("Enrollment error:", e)

@@ -45,9 +45,11 @@ class CourseDetailView(generics.RetrieveAPIView):
     def get_serializer_context(self):
         context = super().get_serializer_context()
         request = context.get('request')
+        
+        # Safely get the course object
         try:
             course = self.get_object()
-        except AssertionError:
+        except Exception:
             return context
 
         if request and request.user.is_authenticated:
