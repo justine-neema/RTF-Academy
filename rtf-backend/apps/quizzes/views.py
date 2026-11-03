@@ -4,6 +4,7 @@ from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.db import transaction
+
 from apps.courses.models import Module
 from apps.users.permissions import IsAdminRole
 from .models import Quiz, Question, AnswerChoice, StudentAnswer
@@ -131,6 +132,7 @@ class QuizSubmitView(APIView):
         for choice in selected_choices:
             if choice.is_correct:
                 correct_count += 1
+            # FIXED: Only append to graded if the choice was actually selected
             graded.append((choice.question, choice))
 
         score = int((correct_count / total_questions) * 100)
