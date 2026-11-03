@@ -1,11 +1,12 @@
 from rest_framework import serializers
 from .models import Course, Module, Lesson
-from django.core.exceptions import ObjectDoesNotExist
 from apps.progress.models import Enrollment
 from .utils import calculate_progress
 
+# ==========================================
+# STUDENT SERIALIZERS
+# ==========================================
 
-# Student serializers
 class StudentLessonSerializer(serializers.ModelSerializer):
     """Student view: Enforces locks and strips content."""
     is_locked = serializers.SerializerMethodField()
@@ -24,6 +25,7 @@ class StudentLessonSerializer(serializers.ModelSerializer):
             data['text_content'] = None
             data['video_s3_url'] = None
         return data
+
 
 class StudentModuleSerializer(serializers.ModelSerializer):
     is_locked = serializers.SerializerMethodField()
@@ -50,7 +52,6 @@ class StudentModuleSerializer(serializers.ModelSerializer):
 
 
 class StudentCourseDetailSerializer(serializers.ModelSerializer):
-    """Uses the StudentModuleSerializer (enforces locks)"""
     modules = serializers.SerializerMethodField()
     total_lessons = serializers.SerializerMethodField()
     module_count = serializers.SerializerMethodField()
@@ -60,7 +61,7 @@ class StudentCourseDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = Course
         fields = [
-            'id', 'title', 'description','outcomes', 'thumbnail_url',
+            'id', 'title', 'description', 'outcomes', 'thumbnail_url',
             'modules', 'total_lessons', 'module_count',
             'is_enrolled', 'progress_percentage'
         ]
@@ -95,7 +96,7 @@ class StudentCourseDetailSerializer(serializers.ModelSerializer):
 
         return calculate_progress(request.user, obj)
 
-# shared serializers (student and admin)
+
 class CourseListSerializer(serializers.ModelSerializer):
     total_lessons = serializers.SerializerMethodField()
     module_count = serializers.SerializerMethodField()
@@ -103,15 +104,8 @@ class CourseListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Course
         fields = [
-            'id',
-            'title',
-            'description',
-            'thumbnail_url',
-            'is_published',
-            'created_at',
-            'updated_at',
-            'total_lessons',
-            'module_count',
+            'id', 'title', 'description', 'thumbnail_url', 'is_published',
+            'created_at', 'updated_at', 'total_lessons', 'module_count',
         ]
 
     def get_total_lessons(self, obj):
@@ -120,18 +114,14 @@ class CourseListSerializer(serializers.ModelSerializer):
     def get_module_count(self, obj):
         return len(obj.modules.all())
 
-# Admin serializers
+# ==========================================
+# ADMIN SERIALIZERS
+# ==========================================
+
 class AdminLessonSerializer(serializers.ModelSerializer):
     class Meta:
         model = Lesson
-        fields = [
-            'id',
-            'title',
-            'text_content',
-            'video_s3_url',
-            'sequence_order',
-            'estimated_minutes',
-        ]
+        fields = ['id', 'title', 'text_content', 'video_s3_url', 'sequence_order', 'estimated_minutes']
 
 
 class AdminModuleSerializer(serializers.ModelSerializer):
@@ -140,20 +130,13 @@ class AdminModuleSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Module
-        fields = [
-            'id',
-            'title',
-            'sequence_order',
-            'lessons',
-            'lesson_count',
-        ]
+        fields = ['id', 'title', 'sequence_order', 'lessons', 'lesson_count']
 
     def get_lesson_count(self, obj):
         return obj.lessons.count()
 
 
 class AdminCourseDetailSerializer(serializers.ModelSerializer):
-    """Uses the AdminModuleSerializer (sees all content)"""
     modules = AdminModuleSerializer(many=True, read_only=True)
     total_lessons = serializers.SerializerMethodField()
     module_count = serializers.SerializerMethodField()
@@ -161,9 +144,8 @@ class AdminCourseDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = Course
         fields = [
-            'id', 'title', 'description', 'thumbnail_url',
-            'is_published', 'created_at', 'updated_at',
-            'modules', 'total_lessons', 'module_count'
+            'id', 'title', 'description', 'thumbnail_url', 'is_published', 
+            'created_at', 'updated_at', 'modules', 'total_lessons', 'module_count'
         ]
 
     def get_total_lessons(self, obj):
@@ -176,46 +158,19 @@ class AdminCourseDetailSerializer(serializers.ModelSerializer):
 class CourseCreateUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Course
-        fields = [
-            'id',
-            'title',
-            'description',
-            'thumbnail_url',
-            'is_published',
-        ]
+        fields = ['id', 'title', 'description', 'thumbnail_url', 'is_published']
         read_only_fields = ['id', 'created_at', 'updated_at']
-
-    def create(self, validated_data):
-        return Course.objects.create(**validated_data)
-
-    def update(self, instance, validated_data):
-        for attr, value in validated_data.items():
-            setattr(instance, attr, value)
-        instance.save()
-
-        return instance
 
 
 class ModuleWriteSerializer(serializers.ModelSerializer):
     class Meta:
         model = Module
-        fields = [
-            'id',
-            'title',
-            'sequence_order',
-        ]
+        fields = ['id', 'title', 'sequence_order']
         read_only_fields = ['id']
 
 
 class LessonWriteSerializer(serializers.ModelSerializer):
     class Meta:
         model = Lesson
-        fields = [
-            'id',
-            'title',
-            'text_content',
-            'video_s3_url',
-            'sequence_order',
-            'estimated_minutes',
-        ]
+        fields = ['id', 'title', 'text_content', 'video_s3_url', 'sequence_order', 'estimated_minutes']
         read_only_fields = ['id']

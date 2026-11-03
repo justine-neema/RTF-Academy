@@ -1,25 +1,11 @@
-# courses/management/commands/seed_real_courses.py
-#
-# Seeds the database with real RTF Academy course content.
-# Place this file at:
-#   courses/management/commands/seed_real_courses.py
-#
-# Also place rtf_academy_courses_refined.json in the project root (same folder as manage.py).
-#
-# Run with:
-#   python manage.py seed_real_courses
-#
-# The command is fully IDEMPOTENT — safe to run multiple times.
-# Existing courses (matched by title) are skipped, not duplicated.
-
 import json
 import os
 
 from django.conf import settings
 from django.core.management.base import BaseCommand
 
-from courses.models import Course, Module, Lesson
-from quizzes.models import AnswerChoice, Question, Quiz
+from apps.courses.models import Course, Module, Lesson
+from apps.quizzes.models import AnswerChoice, Question, Quiz
 
 
 class Command(BaseCommand):

@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api } from '../../services/api.js'
@@ -23,16 +22,22 @@ export default function CourseCatalogPage() {
   useEffect(() => {
     async function load() {
       try {
-        const token = await getToken()
-        const data = await api.listCourses(token)
+        // The api.js client automatically attaches the token from localStorage.
+        // We don't need to pass the token manually here.
+        const data = await api.listCourses()
+        
+        // This will print the data from Neon to your browser console so you can verify it!
+        console.log("Fetched Courses from Django:", data)
+
         setCourses(Array.isArray(data) ? data : [])
       } catch (e) {
+        console.error("Error loading courses:", e)
         setError('Failed to load courses. Please try again.')
       }
       setLoading(false)
     }
     load()
-  }, [getToken])
+  }, [])
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8">
@@ -70,7 +75,6 @@ export default function CourseCatalogPage() {
                     Continue Learning
                   </Link>
                 ) : (
-                  // Reverted to bg-navy text-white
                   <Link to={`/courses/${course.id}`} className="inline-block bg-navy text-white hover:bg-opacity-90 transition-opacity text-xs font-semibold px-4 py-2 rounded-md">
                     View Course
                   </Link>

@@ -5,52 +5,54 @@ import { api } from '../services/api.js'
 const ProgressContext = createContext(null)
 
 export function ProgressProvider({ children }) {
-  const { user, getToken } = useAuth()
+  const { user } = useAuth()
   const [enrollments, setEnrollments] = useState([])
   const [certificates, setCertificates] = useState([])
+  const [loading, setLoading] = useState(true)
 
   const refreshEnrollments = useCallback(async () => {
-    const token = await getToken()
-    if (!token) return
+    if (!user) return
     try {
-      const data = await api.listEnrollments(token)
+      // api.js automatically handles the token
+      const data = await api.listEnrollments()
       setEnrollments(Array.isArray(data) ? data : [])
     } catch (e) {
-      console.error('[RTF] refreshEnrollments failed:', e)
+      console.error('Failed to refresh enrollments:', e)
     }
-  }, [getToken])
+  }, [user])
 
   const refreshCertificates = useCallback(async () => {
-    const token = await getToken()
-    if (!token) return
+    if (!user) return
     try {
-      const data = await api.myCertificates(token)
+      const data = await api.myCertificates()
       setCertificates(Array.isArray(data) ? data : [])
     } catch (e) {
-      console.error('[RTF] refreshCertificates failed:', e)
+      console.error('Failed to refresh certificates:', e)
     }
-  }, [getToken])
+  }, [user])
 
-  // Reload whenever the logged-in user changes
+  // Load data when user logs in
   useEffect(() => {
-    if (user) {
-      refreshEnrollments()
-      refreshCertificates()
-    } else {
-      setEnrollments([])
-      setCertificates([])
+    async function loadData() {
+      if (user) {
+        setLoading(true)
+        await Promise.all([refreshEnrollments(), refreshCertificates()])
+      } else {
+        setEnrollments([])
+        setCertificates([])
+      }
+      setLoading(false)
     }
+    loadData()
   }, [user, refreshEnrollments, refreshCertificates])
 
   function _getCourseId(e) {
-    // enrollment.course can be a UUID string or a nested object
     return e.course && typeof e.course === 'object' ? e.course.id : e.course
   }
 
   async function enroll(courseId) {
-    const token = await getToken()
-    const data = await api.enroll(courseId, token)
-    await refreshEnrollments()
+    const data = await api.enroll(courseId)
+    await refreshEnrollments() // Refresh the list so the UI updates instantly
     return data
   }
 
@@ -63,24 +65,20 @@ export function ProgressProvider({ children }) {
   }
 
   async function completeLesson(lessonId) {
-    const token = await getToken()
-    const data = await api.completeLesson(lessonId, token)
+    const data = await api.completeLesson(lessonId)
     await refreshEnrollments()
-    return data  // { lesson_id, progress_percentage, course_completed, certificate_earned? }
+    return data 
   }
 
-  function allEnrollments() { return enrollments }
-
-  // Frontend-only integrity logging (no backend endpoint)
-  function logIntegrityEvent(courseId, event) {
-    console.log('[Integrity]', courseId, event)
+  function allEnrollments() { 
+    return enrollments 
   }
 
   return (
     <ProgressContext.Provider value={{
-      enrollments, certificates,
+      enrollments, certificates, loading,
       refreshEnrollments, refreshCertificates,
-      enroll, isEnrolled, getEnrollment, completeLesson, allEnrollments, logIntegrityEvent,
+      enroll, isEnrolled, getEnrollment, completeLesson, allEnrollments
     }}>
       {children}
     </ProgressContext.Provider>

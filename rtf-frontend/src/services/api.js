@@ -45,7 +45,6 @@ export const api = {
   login:         (email, password) => request('/users/login/', { method: 'POST', body: { email, password } }),
   register:      (payload)   => request('/users/register/', { method: 'POST', body: payload }),
   googleLogin:   (token)     => request('/users/auth/google/', { method: 'POST', body: { access_token: token } }),
-  refreshToken:  (refresh)   => request('/users/token/refresh/', { method: 'POST', body: { refresh } }),
 
   // ── Courses ─────────────────────────────────────────────────────────────
   listCourses:     ()       => request('/courses/'),
@@ -84,7 +83,6 @@ export const api = {
   createLesson: (moduleId, p)     => request(`/courses/modules/${moduleId}/lessons/`, { method: 'POST', body: p }),
 }
 
-// ── Admin — quiz management ─────────────────────────────────────────────
 export const adminQuizApi = {
   createQuiz:     (moduleId, data)   => request(`/assessments/admin/modules/${moduleId}/quiz/`, { method: 'POST', body: data }),
   getQuizzes:     ()                 => request('/assessments/admin/quizzes/'),

@@ -1,22 +1,13 @@
 from django.urls import path
-
 from .views import (
-    AdminCoursePublishView,
-    AdminEnrollmentReportView,
-    AdminStatsView,
-    AdminCourseDetailView,
-    AdminCourseListCreateView,
-    CourseModuleCreateView,
-    CourseDetailView,
-    CourseListView,
-    ModuleDetailView,
-    ModuleLessonCreateView,
+    AdminCoursePublishView, AdminEnrollmentReportView, AdminStatsView,
+    AdminCourseDetailView, AdminCourseListCreateView, CourseModuleCreateView,
+    CourseDetailView, CourseListView, ModuleDetailView, ModuleLessonCreateView,
     StudentLessonDetailView
 )
 
 urlpatterns = [
-
-    # student routes
+    # Student routes
     path('', CourseListView.as_view(), name='course-list'),
     path('<uuid:pk>/', CourseDetailView.as_view(), name='course-detail'),
     path('<uuid:course_id>/modules/', CourseModuleCreateView.as_view(), name='course-module-create'),
@@ -24,7 +15,7 @@ urlpatterns = [
     path('modules/<uuid:module_id>/lessons/', ModuleLessonCreateView.as_view(), name='module-lesson-create'),
     path('lessons/<uuid:pk>/', StudentLessonDetailView.as_view(), name='lesson-detail'),
 
-    # admin routes
+    # Admin routes
     path('admin/', AdminCourseListCreateView.as_view(), name='admin-course-list-create'),
     path('admin/<uuid:pk>/', AdminCourseDetailView.as_view(), name='admin-course-detail'),
     path('admin/courses/<uuid:pk>/publish/', AdminCoursePublishView.as_view(), name='admin-course-publish'),
