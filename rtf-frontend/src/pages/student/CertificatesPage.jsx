@@ -1,18 +1,15 @@
-
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { useAuth } from '../../context/AuthContext.jsx'
 import { useProgress } from '../../context/ProgressContext.jsx'
 import { api } from '../../services/api.js'
 import ProgressBar from '../../components/common/ProgressBar.jsx'
-import StatCard from '../../components/common/StatCard.jsx' // Imported our new Figma component!
+import StatCard from '../../components/common/StatCard.jsx'
 
 function formatDate(d) {
   try { return new Date(d).toLocaleDateString() } catch { return d }
 }
 
 export default function CertificatesPage() {
-  const { getToken } = useAuth()
   const { certificates, enrollments } = useProgress()
   const [downloading, setDownloading] = useState(null)
   const [copyMsg, setCopyMsg] = useState(null)
@@ -22,8 +19,8 @@ export default function CertificatesPage() {
   async function handleDownload(cert) {
     setDownloading(cert.id)
     try {
-      const token = await getToken()
-      const data = await api.downloadCertificate(cert.id, token)
+      // api.js automatically attaches the token! No need for getToken()
+      const data = await api.downloadCertificate(cert.id)
       if (data?.pdf_url) {
         window.open(data.pdf_url, '_blank')
       } else {
@@ -47,11 +44,10 @@ export default function CertificatesPage() {
   }
 
   return (
-    // Removed max-w wrapper to allow the layout card to define the width
     <div className="animate-fade-in w-full">
       <h1 className="text-2xl font-bold text-navy mb-6">My Certificates</h1>
 
-      {/* TOP STAT CARDS - Now uses the updated component */}
+      {/* TOP STAT CARDS */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
         <StatCard value={certificates.length} label="Certificates Earned" />
         <StatCard value={inProgress.length} label="In Progress" />
@@ -69,7 +65,7 @@ export default function CertificatesPage() {
                 <div>
                   <p className="text-sm font-bold text-navy">{cert.course?.title || 'Course'}</p>
                   <p className="text-xs text-gray-400 mt-1">
-                    Issued {cert.issued_at ? new Date(cert.issued_at).toLocaleDateString() : ''}
+                    Issued {cert.issued_at ? formatDate(cert.issued_at) : ''}
                   </p>
                   <p className="text-xs text-gray-500 font-mono mt-1 bg-gray-50 inline-block px-2 py-1 rounded border border-gray-100">
                     ID: {cert.verification_code}
@@ -103,7 +99,7 @@ export default function CertificatesPage() {
         )}
       </section>
 
-      {/* COURSES IN PROGRESS - Matched to Figma */}
+      {/* COURSES IN PROGRESS */}
       <section>
         <h2 className="text-lg font-bold text-navy mb-4">Courses In Progress</h2>
         {inProgress.length === 0 ? (
@@ -111,25 +107,16 @@ export default function CertificatesPage() {
         ) : (
           <div className="space-y-4">
             {inProgress.map((enr) => (
-              // Using a lighter opacity gold border to match your screenshot
               <div key={enr.id} className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white border border-[#D19A30]/40 rounded-xl px-6 py-5 shadow-sm">
-
-                {/* Course Title (Left aligned) */}
                 <p className="text-sm font-semibold text-navy md:w-1/3 truncate">
                   {enr.course_title || (enr.course?.title) || 'Course'}
                 </p>
-
-                {/* Progress Bar (Center) */}
                 <div className="flex-1 w-full">
-                  {/* Note: showLabel is false because the Figma design puts the % on the right! */}
                   <ProgressBar percent={enr.progress_percentage || 0} showLabel={false} />
                 </div>
-
-                {/* Percentage Text (Right aligned) */}
                 <span className="text-sm font-medium text-navy md:w-12 text-right">
                   {enr.progress_percentage || 0}%
                 </span>
-
               </div>
             ))}
           </div>

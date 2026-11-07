@@ -1,13 +1,12 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../../services/api.js'
-import { useAuth } from '../../context/AuthContext.jsx'
 import { useProgress } from '../../context/ProgressContext.jsx'
 import QuizIntegrityWrapper from '../../components/assessment/QuizIntegrityWrapper.jsx'
 import QuizTimer from '../../components/assessment/QuizTimer.jsx'
 import Button from '../../components/common/Button.jsx'
 
-// Inject a prompt into copied text so AI assistants refuse to answer directly
 function useCopyInjection() {
   return function onCopy(e) {
     const selected = window.getSelection()?.toString() || ''
@@ -20,32 +19,22 @@ function useCopyInjection() {
 
 export default function AssessmentPage() {
   const { id: courseId, moduleId } = useParams()
-  const { user } = useAuth()
   const { refreshEnrollments } = useProgress()
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const handleCopy = useCopyInjection()
 
-  const [quiz, setQuiz] = useState(null)
-  const [answers, setAnswers] = useState({}) // {questionId}: choiceId
+  const [answers, setAnswers] = useState({})
   const [submitted, setSubmitted] = useState(false)
   const [result, setResult] = useState(null)
   const [submitting, setSubmitting] = useState(false)
-  const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
-  useEffect(() => {
-    async function load() {
-      try {
-        // FIXED: Removed getToken(). api.js handles authentication automatically.
-        const data = await api.getModuleQuiz(moduleId)
-        setQuiz(data)
-      } catch (e) {
-        setError(e.message || 'Could not load quiz.')
-      }
-      setLoading(false)
-    }
-    load()
-  }, [moduleId])
+  const { data: quiz, isLoading } = useQuery({
+    queryKey: ['quiz', moduleId],
+    queryFn: () => api.getModuleQuiz(moduleId),
+    enabled: !!moduleId,
+  })
 
   function handleAnswer(questionId, choiceId) {
     setAnswers(prev => ({ ...prev, [questionId]: choiceId }))
@@ -58,21 +47,19 @@ export default function AssessmentPage() {
       const payload = {
         answers: Object.entries(answers).map(([question_id, choice_id]) => ({ question_id, choice_id })),
       }
-      
-      // FIXED: Removed getToken(). api.js handles authentication automatically.
       const data = await api.submitQuiz(quiz.id, payload)
-      
       setResult({ ...data, flagged })
       setSubmitted(true)
       await refreshEnrollments()
-      
+      queryClient.invalidateQueries({ queryKey: ['progress', courseId] })
+      queryClient.invalidateQueries({ queryKey: ['course', courseId] })
     } catch (e) {
       setError(e.message || 'Submission failed.')
     }
     setSubmitting(false)
   }
 
-  if (loading) return <p className="text-center py-16 text-gray-400">Loading quiz...</p>
+  if (isLoading) return <p className="text-center py-16 text-gray-400">Loading quiz...</p>
   if (error) return <p className="text-center py-16 text-red-500">{error}</p>
   if (!quiz) return null
 
@@ -82,63 +69,32 @@ export default function AssessmentPage() {
     return (
       <div className="max-w-md mx-auto px-4 py-12">
         <div className="bg-white rounded-2xl shadow-sm border border-[#D19A30]/40 p-8 md:p-10 text-center">
-          
           <div className={`w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6 ${result.passed ? 'bg-[#D19A30]/20 text-[#D19A30]' : 'bg-red-100 text-red-600'}`}>
-            {result.passed ? (
-              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="20 6 9 17 4 12"></polyline>
-              </svg>
-            ) : (
-              <span className="text-4xl font-bold">X</span>
-            )}
+            {result.passed ? (<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>) : (<span className="text-4xl font-bold">X</span>)}
           </div>
-
-          <div className="text-2xl font-bold text-navy mb-3">
-            {result.passed ? 'Quiz Passed! 🎉' : 'Not quite — try again'}
-          </div>
-
-          <p className="text-base text-gray-500 mb-2">
-            Score: {result.score}% &nbsp;&nbsp; ({result.correct_answers}/{result.total_questions} correct)
-          </p>
+          <div className="text-2xl font-bold text-navy mb-3">{result.passed ? 'Quiz Passed! 🎉' : 'Not quite — try again'}</div>
+          <p className="text-base text-gray-500 mb-2">Score: {result.score}% &nbsp;&nbsp; ({result.correct_answers}/{result.total_questions} correct)</p>
           <p className="text-sm text-gray-400 mb-8">Passing threshold: {result.passing_threshold}%</p>
-
-          {result.flagged && (
-            <p className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-md px-3 py-2 mb-6">
-              ⚠️ This attempt was flagged for facilitator review.
-            </p>
-          )}
-
+          {result.flagged && (<p className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-md px-3 py-2 mb-6">⚠️ This attempt was flagged for facilitator review.</p>)}
           {result.certificate_earned && (
             <div className="bg-green-50 border border-green-200 rounded-lg px-4 py-3 mb-6 text-left">
               <p className="text-sm font-semibold text-green-800 mb-1">🎓 Course Complete — Certificate Earned!</p>
               <p className="text-xs text-green-700">Code: {result.certificate_earned.verification_code}</p>
             </div>
           )}
-
           <div className="space-y-3">
             {result.passed ? (
               <>
-                {result.certificate_earned && (
-                  <Button className="w-full py-3" onClick={() => navigate(`/course-complete/${courseId}`)}>
-                    View My Certificate
-                  </Button>
-                )}
-                <Button variant="outline" className="w-full py-3 font-semibold border-navy text-navy hover:bg-navy hover:text-white" onClick={() => navigate(`/learn/${courseId}`)}>
-                  Back to Course
-                </Button>
+                {result.certificate_earned && (<Button className="w-full py-3" onClick={() => navigate(`/course-complete/${courseId}`)}>View My Certificate</Button>)}
+                <Button variant="outline" className="w-full py-3 font-semibold border-navy text-navy hover:bg-navy hover:text-white" onClick={() => navigate(`/learn/${courseId}`)}>Back to Course</Button>
               </>
             ) : (
               <>
-                <Button className="w-full py-3" onClick={() => { setSubmitted(false); setResult(null); setAnswers({}) }}>
-                  Try Again
-                </Button>
-                <Button variant="outline" className="w-full py-3 font-semibold border-navy text-navy hover:bg-navy hover:text-white" onClick={() => navigate(`/learn/${courseId}`)}>
-                  Review Lessons
-                </Button>
+                <Button className="w-full py-3" onClick={() => { setSubmitted(false); setResult(null); setAnswers({}) }}>Try Again</Button>
+                <Button variant="outline" className="w-full py-3 font-semibold border-navy text-navy hover:bg-navy hover:text-white" onClick={() => navigate(`/learn/${courseId}`)}>Review Lessons</Button>
               </>
             )}
           </div>
-
         </div>
       </div>
     )
@@ -147,20 +103,15 @@ export default function AssessmentPage() {
   return (
     <div className="max-w-2xl mx-auto px-4 py-8">
       <div className="bg-white rounded-2xl shadow-sm border border-[#D19A30]/40 p-6 md:p-8">
-        
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 pb-6 border-b border-gray-100">
           <div>
             <h1 className="text-xl font-bold text-navy mb-1">{quiz.title}</h1>
             <p className="text-sm font-semibold text-[#D19A30]">Passing threshold: {quiz.passing_threshold}%</p>
           </div>
-          <div>
-            <QuizTimer minutes={quiz.time_limit_minutes || 10} onExpire={() => handleSubmit(false)} />
-          </div>
+          <div><QuizTimer minutes={quiz.time_limit_minutes || 10} onExpire={() => handleSubmit(false)} /></div>
         </div>
 
-        <QuizIntegrityWrapper
-          onViolation={(type) => console.log('Integrity Violation:', type)}
-        >
+        <QuizIntegrityWrapper onViolation={(type) => console.log('Integrity Violation:', type)}>
           {({ flagged }) => (
             <div className="space-y-6 mb-8">
               {quiz.questions.map((q, idx) => (
@@ -168,22 +119,8 @@ export default function AssessmentPage() {
                   <p className="font-bold text-navy text-base mb-4">{idx + 1}. {q.question_text}</p>
                   <div className="space-y-2.5">
                     {(q.choices || []).map(c => (
-                      <label
-                        key={c.id}
-                        className={`flex items-center gap-3 text-sm p-3 rounded-lg cursor-pointer transition-all border ${
-                          answers[q.id] === c.id
-                            ? 'bg-navy text-white border-navy shadow-sm'
-                            : 'bg-white text-navy border-gray-200 hover:border-[#D19A30]/50'
-                        }`}
-                      >
-                        <input
-                          type="radio"
-                          name={q.id}
-                          value={c.id}
-                          checked={answers[q.id] === c.id}
-                          onChange={() => handleAnswer(q.id, c.id)}
-                          className="w-4 h-4 accent-[#D19A30]"
-                        />
+                      <label key={c.id} className={`flex items-center gap-3 text-sm p-3 rounded-lg cursor-pointer transition-all border ${answers[q.id] === c.id ? 'bg-navy text-white border-navy shadow-sm' : 'bg-white text-navy border-gray-200 hover:border-[#D19A30]/50'}`}>
+                        <input type="radio" name={q.id} value={c.id} checked={answers[q.id] === c.id} onChange={() => handleAnswer(q.id, c.id)} className="w-4 h-4 accent-[#D19A30]" />
                         <span className="font-medium">{c.choice_text}</span>
                       </label>
                     ))}
@@ -195,15 +132,9 @@ export default function AssessmentPage() {
         </QuizIntegrityWrapper>
 
         {error && <p className="text-red-600 bg-red-50 border border-red-100 p-3 rounded-lg text-sm mb-4 font-medium">{error}</p>}
-
-        <Button
-          onClick={handleSubmit}
-          disabled={!answeredAll || submitting}
-          className="w-full py-3.5 text-base"
-        >
+        <Button onClick={handleSubmit} disabled={!answeredAll || submitting} className="w-full py-3.5 text-base">
           {submitting ? 'Submitting Assessment...' : answeredAll ? 'Submit Assessment' : 'Answer all questions to submit'}
         </Button>
-
       </div>
     </div>
   )

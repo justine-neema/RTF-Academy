@@ -1,18 +1,31 @@
 from rest_framework import permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from django.db.models import Count, Prefetch
+from django.db import transaction
+
 from .models import Enrollment, LessonCompletion
 from .serializers import EnrollmentSerializer
-from apps.courses.models import Course, Lesson
+from apps.courses.models import Course, Lesson, Module
 from apps.courses.utils import get_locked_modules, calculate_progress, is_course_complete
 from apps.certificates.utils import generate_certificate
-from django.db import transaction
 
 class EnrollmentView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
-        enrollments = Enrollment.objects.filter(student=request.user).select_related('course').order_by('-enrolled_at')
+        # OPTIMIZATION: Fetch everything in 1 query instead of 50+
+        enrollments = Enrollment.objects.filter(student=request.user)\
+            .select_related('course')\
+            .annotate(
+                module_count=Count('course__modules', distinct=True),
+                total_lessons=Count('course__modules__lessons', distinct=True)
+            )\
+            .prefetch_related(
+                Prefetch('course__modules', queryset=Module.objects.prefetch_related('lessons').order_by('sequence_order'))
+            )\
+            .order_by('-enrolled_at')
+            
         return Response(EnrollmentSerializer(enrollments, many=True).data)
 
     def post(self, request):

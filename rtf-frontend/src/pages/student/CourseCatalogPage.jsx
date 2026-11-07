@@ -1,10 +1,8 @@
-import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query' // <-- NEW
 import { api } from '../../services/api.js'
-import { useAuth } from '../../context/AuthContext.jsx'
 import { useProgress } from '../../context/ProgressContext.jsx'
 
-// Verified educational images without human faces
 const FALLBACK_IMAGES = [
   'https://images.unsplash.com/photo-1554415707-6e8cfc93fe23?auto=format&fit=crop&w=600&q=80',
   'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?auto=format&fit=crop&w=600&q=80',
@@ -13,40 +11,22 @@ const FALLBACK_IMAGES = [
 ]
 
 export default function CourseCatalogPage() {
-  const { getToken } = useAuth()
   const { isEnrolled } = useProgress()
-  const [courses, setCourses] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
 
-  useEffect(() => {
-    async function load() {
-      try {
-        // The api.js client automatically attaches the token from localStorage.
-        // We don't need to pass the token manually here.
-        const data = await api.listCourses()
-        
-        // This will print the data from Neon to your browser console so you can verify it!
-        console.log("Fetched Courses from Django:", data)
-
-        setCourses(Array.isArray(data) ? data : [])
-      } catch (e) {
-        console.error("Error loading courses:", e)
-        setError('Failed to load courses. Please try again.')
-      }
-      setLoading(false)
-    }
-    load()
-  }, [])
+  // React Query fetches, caches, and handles errors automatically
+  const { data: courses = [], isLoading, error } = useQuery({
+    queryKey: ['courses'],
+    queryFn: () => api.listCourses(),
+  })
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8">
       <h1 className="text-xl font-bold text-navy mb-1">Courses</h1>
       <p className="text-gray-500 text-sm mb-6">Browse available programs and enroll for free.</p>
 
-      {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
+      {error && <p className="text-red-500 text-sm mb-4">Failed to load courses. Please refresh.</p>}
 
-      {loading ? (
+      {isLoading ? (
         <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-5">
           {[1,2,3].map(i => <div key={i} className="h-48 bg-gray-100 rounded-lg animate-pulse" />)}
         </div>
@@ -54,7 +34,6 @@ export default function CourseCatalogPage() {
         <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-5">
           {courses.map((course, index) => (
             <div key={course.id} className="border border-[#D19A30] rounded-lg overflow-hidden shadow-card bg-white">
-
               <img
                   src={course.thumbnail_url || FALLBACK_IMAGES[index % FALLBACK_IMAGES.length]}
                   alt={course.title}
@@ -64,7 +43,6 @@ export default function CourseCatalogPage() {
                     e.currentTarget.src = FALLBACK_IMAGES[index % FALLBACK_IMAGES.length]
                   }}
                 />
-
               <div className="p-4">
                 <p className="font-semibold text-navy">{course.title}</p>
                 <p className="text-xs text-gray-500 mb-1 line-clamp-2">{course.description}</p>
