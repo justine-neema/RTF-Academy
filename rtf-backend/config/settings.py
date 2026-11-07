@@ -100,7 +100,6 @@ DATABASES = {
 # ==============================================================================
 # 5. AUTHENTICATION, OAUTH & JWT
 # ==============================================================================
-# Custom User Model (CRITICAL: Points to the app inside 'apps' folder)
 AUTH_USER_MODEL = 'users.UserProfile'
 
 SITE_ID = 1
@@ -115,9 +114,10 @@ ACCOUNT_LOGIN_METHODS = {'email'}
 ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1*', 'password2*']
 ACCOUNT_USER_MODEL_USERNAME_FIELD = None
 ACCOUNT_EMAIL_VERIFICATION = 'none' 
+
 # --- Django REST Framework Configuration ---
 REST_FRAMEWORK = {
-    'EXCEPTION_HANDLER': 'config.exceptions.rtf_academy_exception_handler', # <-- UPDATE THIS
+    'EXCEPTION_HANDLER': 'config.exceptions.rtf_academy_exception_handler',
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
@@ -141,19 +141,14 @@ REST_AUTH = {
     'JWT_AUTH_COOKIE': 'rtf-auth', 
     'JWT_AUTH_REFRESH_COOKIE': 'rtf-refresh-token',
     'USER_DETAILS_SERIALIZER': 'apps.users.serializers.UserProfileSerializer',
-    'TOKEN_MODEL': None, # Fixes the TokenModel error
+    'TOKEN_MODEL': None,
 }
 
 # --- Google OAuth Configuration ---
 SOCIALACCOUNT_PROVIDERS = {
     'google': {
-        'SCOPE': [
-            'profile',
-            'email',
-        ],
-        'AUTH_PARAMS': {
-            'access_type': 'online',
-        },
+        'SCOPE': ['profile', 'email'],
+        'AUTH_PARAMS': {'access_type': 'online'},
         'OAUTH_PKCE_ENABLED': True,
         'APP': {
             'client_id': os.getenv('GOOGLE_CLIENT_ID', ''),
@@ -175,21 +170,13 @@ AUTH_PASSWORD_VALIDATORS = [
 # 6. CORS (FRONTEND INTEGRATION)
 # ==============================================================================
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",  # Vite default
+    "http://localhost:5173",
     "http://127.0.0.1:5173",
-    "http://localhost:3000",  # React default
+    "http://localhost:3000",
 ]
-
 CORS_ALLOW_HEADERS = [
-    "accept",
-    "accept-encoding",
-    "authorization",
-    "content-type",
-    "dnt",
-    "origin",
-    "user-agent",
-    "x-csrftoken",
-    "x-requested-with",
+    "accept", "accept-encoding", "authorization", "content-type", "dnt",
+    "origin", "user-agent", "x-csrftoken", "x-requested-with",
 ]
 
 # ==============================================================================
@@ -216,4 +203,19 @@ LOGGING = {
         'django': {'handlers': ['console'], 'level': 'INFO', 'propagate': False},
         'core': {'handlers': ['console'], 'level': 'ERROR', 'propagate': False},
     },
+}
+
+# ==============================================================================
+# 8. CACHING (REDIS)
+# ==============================================================================
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": "redis://127.0.0.1:6379/1",
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            "IGNORE_EXCEPTIONS": True, # Prevents crash if Redis goes down
+        },
+        "KEY_PREFIX": "rtf"
+    }
 }

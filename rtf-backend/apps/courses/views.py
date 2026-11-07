@@ -1,5 +1,7 @@
 from django.db.models import Avg, Count, Prefetch, Q
 from django.shortcuts import get_object_or_404
+from django.utils.decorators import method_decorator
+from django.views.decorators.cache import cache_page
 from rest_framework import generics, permissions, status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
@@ -23,9 +25,13 @@ from .serializers import (
 def _is_admin(user):
     return bool(user and user.is_authenticated and getattr(user, 'role', None) == 'Admin')
 
+# Optimized base queryset with Annotations
 def _course_base_queryset():
     return Course.objects.prefetch_related(
         Prefetch('modules', queryset=Module.objects.prefetch_related('lessons').order_by('sequence_order'))
+    ).annotate(
+        module_count=Count('modules', distinct=True),
+        total_lessons=Count('modules__lessons', distinct=True)
     )
 
 # ==========================================
@@ -35,7 +41,17 @@ def _course_base_queryset():
 class CourseListView(generics.ListAPIView):
     serializer_class = CourseListSerializer
     permission_classes = [AllowAny]
-    queryset = _course_base_queryset().filter(is_published=True).order_by('-created_at')
+    
+    def get_queryset(self):
+        return Course.objects.filter(is_published=True).annotate(
+            module_count=Count('modules', distinct=True),
+            total_lessons=Count('modules__lessons', distinct=True)
+        ).order_by('-created_at')
+
+    # Cache this endpoint for 15 minutes (900 seconds)
+    @method_decorator(cache_page(60 * 15))
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
 
 class CourseDetailView(generics.RetrieveAPIView):
     serializer_class = StudentCourseDetailSerializer
@@ -46,7 +62,6 @@ class CourseDetailView(generics.RetrieveAPIView):
         context = super().get_serializer_context()
         request = context.get('request')
         
-        # Safely get the course object
         try:
             course = self.get_object()
         except Exception:
@@ -147,6 +162,8 @@ class AdminCoursePublishView(APIView):
 class AdminStatsView(APIView):
     permission_classes = [IsAuthenticated, IsAdminRole]
 
+    # Cache Admin Stats for 5 minutes
+    @method_decorator(cache_page(60 * 5))
     def get(self, request):
         return Response({
             'courses': {'total': Course.objects.count(), 'published': Course.objects.filter(is_published=True).count()},

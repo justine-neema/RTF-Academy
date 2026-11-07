@@ -19,6 +19,21 @@ class RegisterView(generics.CreateAPIView):
 class CustomLoginView(TokenObtainPairView):
     permission_classes = [permissions.AllowAny]
 
+    def post(self, request, *args, **kwargs):
+        # 1. Let SimpleJWT generate the tokens
+        response = super().post(request, *args, **kwargs)
+        
+        # 2. If login was successful, inject the user data into the response
+        if response.status_code == 200:
+            email = request.data.get('email')
+            try:
+                user = UserProfile.objects.get(email=email)
+                response.data['user'] = UserProfileSerializer(user).data
+            except UserProfile.DoesNotExist:
+                pass
+                
+        return response
+
 class CurrentUserView(generics.RetrieveUpdateAPIView):
     serializer_class = UserProfileSerializer
     permission_classes = [permissions.IsAuthenticated]

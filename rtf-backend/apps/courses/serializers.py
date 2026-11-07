@@ -8,7 +8,6 @@ from .utils import calculate_progress
 # ==========================================
 
 class StudentLessonSerializer(serializers.ModelSerializer):
-    """Student view: Enforces locks and strips content."""
     is_locked = serializers.SerializerMethodField()
 
     class Meta:
@@ -30,7 +29,7 @@ class StudentLessonSerializer(serializers.ModelSerializer):
 class StudentModuleSerializer(serializers.ModelSerializer):
     is_locked = serializers.SerializerMethodField()
     lessons = serializers.SerializerMethodField()
-    lesson_count = serializers.SerializerMethodField()
+    lesson_count = serializers.IntegerField(source='lessons.count', read_only=True) # Optimized
 
     class Meta:
         model = Module
@@ -40,12 +39,9 @@ class StudentModuleSerializer(serializers.ModelSerializer):
         locked_modules = self.context.get('locked_modules', set())
         return obj.id in locked_modules
 
-    def get_lesson_count(self, obj):
-        return obj.lessons.count()
-
     def get_lessons(self, obj):
         locked_modules = self.context.get('locked_modules', set())
-        lessons = obj.lessons.order_by('sequence_order')
+        lessons = obj.lessons.all() # Already prefetched in view
         return StudentLessonSerializer(
             lessons, many=True, context={'locked_modules': locked_modules}
         ).data
@@ -53,8 +49,8 @@ class StudentModuleSerializer(serializers.ModelSerializer):
 
 class StudentCourseDetailSerializer(serializers.ModelSerializer):
     modules = serializers.SerializerMethodField()
-    total_lessons = serializers.SerializerMethodField()
-    module_count = serializers.SerializerMethodField()
+    total_lessons = serializers.IntegerField(read_only=True) # Optimized
+    module_count = serializers.IntegerField(read_only=True) # Optimized
     is_enrolled = serializers.SerializerMethodField()
     progress_percentage = serializers.SerializerMethodField()
 
@@ -68,38 +64,30 @@ class StudentCourseDetailSerializer(serializers.ModelSerializer):
 
     def get_modules(self, obj):
         return StudentModuleSerializer(
-            obj.modules.all(),
+            obj.modules.all(), # Already prefetched in view
             many=True,
             context=self.context
         ).data
-
-    def get_total_lessons(self, obj):
-        return sum(len(m.lessons.all()) for m in obj.modules.all())
-
-    def get_module_count(self, obj):
-        return len(obj.modules.all())
 
     def get_is_enrolled(self, obj):
         request = self.context.get('request')
         if not request or not request.user.is_authenticated:
             return False
+        # Using .exists() is fast and prevents fetching full objects
         return Enrollment.objects.filter(student=request.user, course=obj).exists()
 
     def get_progress_percentage(self, obj):
         request = self.context.get('request')
         if not request or not request.user.is_authenticated:
             return 0
-
-        is_enrolled = Enrollment.objects.filter(student=request.user, course=obj).exists()
-        if not is_enrolled:
+        if not Enrollment.objects.filter(student=request.user, course=obj).exists():
             return 0
-
         return calculate_progress(request.user, obj)
 
 
 class CourseListSerializer(serializers.ModelSerializer):
-    total_lessons = serializers.SerializerMethodField()
-    module_count = serializers.SerializerMethodField()
+    total_lessons = serializers.IntegerField(read_only=True) # Optimized
+    module_count = serializers.IntegerField(read_only=True) # Optimized
 
     class Meta:
         model = Course
@@ -108,11 +96,6 @@ class CourseListSerializer(serializers.ModelSerializer):
             'created_at', 'updated_at', 'total_lessons', 'module_count',
         ]
 
-    def get_total_lessons(self, obj):
-        return sum(len(m.lessons.all()) for m in obj.modules.all())
-
-    def get_module_count(self, obj):
-        return len(obj.modules.all())
 
 # ==========================================
 # ADMIN SERIALIZERS
@@ -126,20 +109,17 @@ class AdminLessonSerializer(serializers.ModelSerializer):
 
 class AdminModuleSerializer(serializers.ModelSerializer):
     lessons = AdminLessonSerializer(many=True, read_only=True)
-    lesson_count = serializers.SerializerMethodField()
+    lesson_count = serializers.IntegerField(source='lessons.count', read_only=True)
 
     class Meta:
         model = Module
         fields = ['id', 'title', 'sequence_order', 'lessons', 'lesson_count']
 
-    def get_lesson_count(self, obj):
-        return obj.lessons.count()
-
 
 class AdminCourseDetailSerializer(serializers.ModelSerializer):
     modules = AdminModuleSerializer(many=True, read_only=True)
-    total_lessons = serializers.SerializerMethodField()
-    module_count = serializers.SerializerMethodField()
+    total_lessons = serializers.IntegerField(read_only=True)
+    module_count = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = Course
@@ -147,12 +127,6 @@ class AdminCourseDetailSerializer(serializers.ModelSerializer):
             'id', 'title', 'description', 'thumbnail_url', 'is_published', 
             'created_at', 'updated_at', 'modules', 'total_lessons', 'module_count'
         ]
-
-    def get_total_lessons(self, obj):
-        return sum(len(m.lessons.all()) for m in obj.modules.all())
-
-    def get_module_count(self, obj):
-        return len(obj.modules.all())
 
 
 class CourseCreateUpdateSerializer(serializers.ModelSerializer):

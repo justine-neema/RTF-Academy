@@ -13,6 +13,7 @@ export function AuthProvider({ children }) {
       const token = localStorage.getItem('access_token')
       if (token) {
         try {
+          // This is the only place we fetch /me/ now (on page refresh)
           const profile = await api.me()
           setUser(profile)
         } catch (err) {
@@ -31,9 +32,9 @@ export function AuthProvider({ children }) {
     localStorage.setItem('access_token', data.access)
     localStorage.setItem('refresh_token', data.refresh)
     
-    const profile = await api.me()
-    setUser(profile)
-    return profile
+    // INSTANT: Use the user object returned directly from the login endpoint
+    setUser(data.user)
+    return data.user
   }
 
   async function register({ full_name, email, password }) {
@@ -48,10 +49,10 @@ export function AuthProvider({ children }) {
     localStorage.setItem('access_token', data.access)
     localStorage.setItem('refresh_token', data.refresh)
     
-    const profile = await api.me()
-    setUser(profile)
-    return profile
-}
+    // INSTANT: Use the user object returned directly from the Google endpoint
+    setUser(data.user)
+    return data.user
+  }
 
   async function resetPassword(email) {
     throw new Error('Password reset via email is not configured on the backend yet.')
